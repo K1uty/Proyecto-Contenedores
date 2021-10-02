@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Image } from "react-konva";
 
 const AnnotationImage = ({
-  imageURL = "https://i1.wp.com/hipertextual.com/wp-content/uploads/2013/04/Paris.jpg?fit=1024%2C685&ssl=1"
+  imageURL = ""
 }) => {
   const [image, setImage] = useState(null);
 

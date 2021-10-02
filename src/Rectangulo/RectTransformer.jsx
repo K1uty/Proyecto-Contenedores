@@ -22,7 +22,7 @@ const RectTransformer = ({ selectedShapeName = "" }) => {
     }
   };
 
-  return <Transformer ref={transRef} rotateEnabled={false} ignoreStroke />;
+  return <Transformer ref={transRef} ignoreStroke />;
 };
 
 export default RectTransformer;

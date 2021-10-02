@@ -1,10 +1,11 @@
-import { Layer, Stage, Rect, Line } from "react-konva";
+import { Layer, Stage } from "react-konva";
 import { useState, useEffect, useRef } from "react";
 import shortid from "shortid";
 
 import Rectangulo from "./Rectangulo/Rectangulo";
 import RectTransfomer from "./Rectangulo/RectTransformer";
 import AnnotationImage from "./AnnotationImage/AnnotationImage";
+import ModalTest from "./Modal/Modal";
 
 const App = () => {
   const stageRef = useRef();
@@ -17,98 +18,15 @@ const App = () => {
   const [mouseDraw, setMouseDraw] = useState(false);
   const [newRectX, setNewRectX] = useState(0);
   const [newRectY, setNewRectY] = useState(0);
-  const [poly, setPoly] = useState({
-    points: [],
-    curMousePos: [0, 0],
-    isMouseOverStartPoint: false,
-    isFinished: false,
-    isPoly: false,
+  const [show, setShow] = useState(false);
+  const [coordenadas, setCoordenadas] = useState({
+    x:0,
+    y:0,
   });
 
   useEffect(() => {
     imgLayerRef && imgLayerRef.current.moveToBottom();
   }, [imgLayerRef]);
-
-  const handleCheckboxChange = () => {
-    setPoly({
-      ...poly,
-      isPoly: !poly.isPoly,
-    });
-  };
-
-  const getMousePos = (stage) => {
-    return [stage.getPointerPosition().x, stage.getPointerPosition().y];
-  };
-
-  const handleClickPoly = (e) => {
-      const stage = e.target.getStage();
-      const mousePos = getMousePos(stage);
-      if (poly.isFinished) {
-        return;
-      }
-      if (poly.isMouseOverStartPoint && poly.points.length >= 3) {
-        setPoly({
-          ...poly,
-          isFinished: true,
-        });
-      } else {
-        setPoly({
-          ...poly,
-          points: [...poly.points, mousePos],
-        });
-        console.log(poly.points)
-      }
-  };
-
-  const handleMouseMovePoly = (e) => {
-    const stage = e.target.getStage();
-    const mousePos = getMousePos(stage);
-
-    setPoly({
-      ...poly,
-      curMousePos: mousePos,
-    });
-  };
-
-  const handleMouseOverStartPoint = (e) => {
-    if (poly.isFinished || poly.points.length < 3) return;
-    e.target.scale({ x: 2, y: 2 });
-    setPoly({
-      ...poly,
-      isMouseOverStartPoint: true,
-    });
-  };
-
-  const handleMouseOutStartPoint = (e) => {
-    e.target.scale({ x: 1, y: 1 });
-    setPoly({
-      ...poly,
-      isMouseOverStartPoint: false,
-    });
-  };
-
-  const handleDragMovePoint = (e) => {
-    const points = poly.points;
-    const index = e.target.index - 1;
-    const pos = [e.target.attrs.x, e.target.attrs.y];
-    setPoly({
-      ...poly,
-      points: [...points.slice(0, index), pos, ...points.slice(index + 1)],
-    });
-  };
-
-  const handleDragStartPoint = (event) => {
-    //console.log("start", event);
-  };
-
-
-  const handleDragOutPoint = (event) => {
-    //console.log("end", event);
-  };
-
-  const flattenedPoints = poly.points
-    .concat(poly.isFinished ? [] : poly.curMousePos)
-    .reduce((a, b) => a.concat(b), []);
 
   const _onStageMouseDown = (event) => {
     if (event.target.className === "Image") {
@@ -117,6 +35,10 @@ const App = () => {
       setMouseDown(true);
       setNewRectX(mousePos.x);
       setNewRectY(mousePos.y);
+      setCoordenadas({
+        x: mousePos.x,
+        y: mousePos.y,
+      })
       setSelectedShapeName("");
       return;
     }
@@ -180,7 +102,6 @@ const App = () => {
       (rectangles[rectCount] = updatedRect),
       ...rectangles.slice(rectCount + 1),
     ];
-
     return setRectangles(newRects);
   };
 
@@ -188,6 +109,7 @@ const App = () => {
     if (mouseDraw) {
       setRectCount(rectCount + 1);
       setMouseDraw(false);
+      setShow(!show);
     }
     setMouseDown(false);
   };
@@ -227,23 +149,19 @@ const App = () => {
   };
 
   return (
-    <div id="stageContainer">
-      <input
-        type="checkbox"
-        checked={poly.isPoly}
-        onChange={handleCheckboxChange}
-      />
-      <label>Drawing Mode</label>
+    <>
+    <div>
+    <ModalTest muestro={show} coordenadas={coordenadas}/>
+    </div>
+    <div id="stageContainer">  
       <Stage
         ref={stageRef}
         container={"stageContainer"}
         width={window.innerWidth}
         height={window.innerHeight}
-        onMouseDown={poly.isPoly ? handleClickPoly : _onStageMouseDown}
+        onMouseDown={_onStageMouseDown}
         onTouchStart={_onStageMouseDown}
-        onMouseMove={
-          poly.isPoly ? handleMouseMovePoly : mouseDown && _onNewRectChange
-        }
+        onMouseMove={mouseDown && _onNewRectChange}
         onTouchMove={mouseDown && _onNewRectChange}
         onMouseUp={mouseDown && _onStageMouseUp}
         onMouseEnd={mouseDown && _onStageMouseUp}
@@ -261,48 +179,12 @@ const App = () => {
           ))}
           <RectTransfomer selectedShapeName={selectedShapeName} />
         </Layer>
-        <Layer>
-          <Line
-            points={flattenedPoints}
-            stroke="black"
-            strokeWidth={5}
-            closed={poly.isFinished}
-          />
-          {poly.points.map((point, index) => {
-            const width = 6;
-            const x = point[0] - width / 2;
-            const y = point[1] - width / 2;
-            const startPointAttr =
-              index === 0
-                ? {
-                    hitStrokeWidth: 12,
-                    onMouseOver: handleMouseOverStartPoint,
-                    onMouseOut: handleMouseOutStartPoint,
-                  }
-                : null;
-            return (
-              <Rect
-                key={index}
-                x={x}
-                y={y}
-                width={width}
-                height={width}
-                stroke="black"
-                strokeWidth={3}
-                onDragStart={handleDragStartPoint}
-                onDragMove={handleDragMovePoint}
-                onDragEnd={handleDragOutPoint}
-                draggable
-                {...startPointAttr}
-              />
-            );
-          })}
-        </Layer>
         <Layer ref={imgLayerRef}>
           <AnnotationImage />
         </Layer>
       </Stage>
     </div>
+    </>
   );
 };
 

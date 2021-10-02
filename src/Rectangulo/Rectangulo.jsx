@@ -12,6 +12,7 @@ const Rectangulo = (props) => {
     const shape = event.target;
 
     props.onTransform({
+      
       x: shape.x(),
       y: shape.y(),
       width: shape.width() * shape.scaleX(),
